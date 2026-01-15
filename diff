@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Games Here</title>
+<style>
+:root{--bg:#0f172a;--card:#020617;--text:#e5e7eb;--accent:#38bdf8}
+.light{--bg:#f1f5f9;--card:#ffffff;--text:#020617;--accent:#0284c7}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial;background:var(--bg);color:var(--text)}
+header{background:var(--card);padding:15px;text-align:center}
+header h1{margin:0;color:var(--accent)}
+main{max-width:1200px;margin:auto;padding:15px}
+.box{background:var(--card);padding:15px;border-radius:12px;margin-bottom:20px}
+input,textarea,select{width:100%;padding:10px;margin-bottom:10px;border-radius:8px;border:1px solid #1e293b;background:var(--card);color:var(--text)}
+button{padding:8px 14px;border:none;border-radius:8px;background:var(--accent);color:#020617;font-weight:bold;cursor:pointer}
+.games{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px}
+.card{background:var(--card);padding:12px;border-radius:12px}
+.card img,.card video{width:100%;border-radius:10px}
+.profile-bar{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.profile-bar img{width:40px;height:40px;border-radius:50%;object-fit:cover}
+.link{color:var(--accent);cursor:pointer}
+.comment{border-top:1px solid #1e293b;margin-top:8px;padding-top:6px;font-size:.9rem}
+.badge{background:gold;color:#000;padding:3px 6px;border-radius:6px;font-size:.75rem}
+/* TikTok */
+#tiktok>div{height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;border-bottom:1px solid #1e293b;position:relative}
+#tiktok video{max-height:70vh}
+.heart{position:absolute;font-size:48px;animation:float 1s ease-out forwards;color:#ff3b7f}
+@keyframes float{from{transform:translateY(0) scale(1);opacity:1}to{transform:translateY(-120px) scale(1.5);opacity:0}}
+</style>
+</head>
+<body>
+<header>
+<h1>🎮 Games Here</h1>
+<p>Criador: <span class="link" onclick="openProfile('o_hzinn_22')">o_hzinn_22</span></p>
+</header>
+<main>
+
+<div class="box profile-bar" id="topProfile" style="display:none">
+<div style="display:flex;align-items:center;gap:10px">
+<img id="topAvatar"><b id="topName"></b>
+</div>
+<div>
+<button onclick="toggleTheme()">🌙</button>
+<button onclick="toggleFeed()">🎥 Modo TikTok</button>
+<button onclick="logout()">Sair</button>
+</div>
+</div>
+
+<div class="box" id="loginBox">
+<h2>Login</h2>
+<input id="username" placeholder="Usuário">
+<input id="password" type="password">
+<input type="file" id="avatarInput" accept="image/*">
+<button onclick="login()">Entrar</button>
+</div>
+
+<div class="box" id="postBox" style="display:none">
+<h2>Postar jogo</h2>
+<input id="title" placeholder="Nome">
+<textarea id="description" placeholder="Descrição"></textarea>
+<select id="genre"><option>Ação</option><option>Aventura</option><option>RPG</option><option>Corrida</option><option>Terror</option><option>Esporte</option></select>
+<input type="file" id="image" accept="image/*">
+<input type="file" id="video" accept="video/mp4,video/webm,image/gif">
+<label><input type="checkbox" id="featured"> Destaque</label>
+<input id="link" placeholder="Link">
+<button onclick="addGame()">Publicar</button>
+</div>
+
+<div class="box" id="profilePage" style="display:none"></div>
+<section class="games" id="games"></section>
+<section id="tiktok" style="display:none"></section>
+</main>
+
+<script>
+let users=JSON.parse(localStorage.getItem('users'))||{};
+let profiles=JSON.parse(localStorage.getItem('profiles'))||{};
+let follows=JSON.parse(localStorage.getItem('follows'))||{};
+let games=JSON.parse(localStorage.getItem('games'))||[];
+let user=localStorage.getItem('user');
+let theme=localStorage.getItem('theme')||'dark';
+if(theme==='light')document.body.classList.add('light');
+
+function login(){const u=username.value,p=password.value,f=avatarInput.files[0];if(!u||!p)return alert('Preencha tudo');if(!users[u])users[u]=p;if(users[u]!==p)return alert('Senha incorreta');if(f){const r=new FileReader();r.onload=()=>{profiles[u]=r.result;saveAll();finishLogin(u)};r.readAsDataURL(f)}else finishLogin(u)}
+function finishLogin(u){localStorage.setItem('user',u);user=u;init()}
+function logout(){localStorage.removeItem('user');location.reload()}
+function init(){loginBox.style.display='none';postBox.style.display='block';topProfile.style.display='flex';topName.innerText=user;topAvatar.src=profiles[user]||'https://via.placeholder.com/40';render()}
+if(user)init();
+function toggleTheme(){document.body.classList.toggle('light');localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark')}
+
+function addGame(){const img=image.files[0],vid=video.files[0];const rImg=new FileReader(),rVid=new FileReader();rImg.onload=()=>{const base={id:Date.now(),title:title.value,description:description.value,genre:genre.value,image:rImg.result,video:null,link:link.value,featured:featured.checked,likes:0,ratings:[],comments:[],author:user};if(vid){rVid.onload=()=>{base.video=rVid.result;games.unshift(base);saveAll();render()};rVid.readAsDataURL(vid)}else{games.unshift(base);saveAll();render()}};if(img)rImg.readAsDataURL(img)}
+
+function likeGame(id,el){const g=games.find(x=>x.id===id);g.likes++;saveAll();if(el)floatHeart(el);render()}
+function floatHeart(el){const h=document.createElement('div');h.className='heart';h.textContent='❤';el.appendChild(h);setTimeout(()=>h.remove(),900)}
+function addComment(id,t){if(!t)return;const g=games.find(x=>x.id===id);g.comments.push(user+': '+t);saveAll();render()}
+function follow(u){follows[u]=follows[u]||[];if(!follows[u].includes(user))follows[u].push(user);saveAll();renderProfile(u)}
+
+function score(g){return g.likes*2 + (g.ratings?.length||0) + (g.featured?5:0)}
+function algorithm(list){return [...list].sort((a,b)=>score(b)-score(a))}
+
+function openProfile(u){profilePage.style.display='block';gamesEl.style.display='none';postBox.style.display='none';const userGames=games.filter(g=>g.author===u);const followers=(follows[u]||[]).length;profilePage.innerHTML=`<div class='box'><h2>👤 ${u}</h2><img src='${profiles[u]||'https://via.placeholder.com/80'}' width='80'><p>Seguidores: ${followers}</p>${user!==u?`<button onclick="follow('${u}')">Seguir</button>`:''}<h3>Jogos</h3>${userGames.map(g=>`<p>${g.title}</p>`).join('')}<button onclick='closeProfile()'>Voltar</button></div>`}
+function closeProfile(){profilePage.style.display='none';gamesEl.style.display='grid';postBox.style.display='block'}
+
+function toggleFeed(){if(tiktok.style.display==='none'){gamesEl.style.display='none';tiktok.style.display='block';renderTikTok()}else{tiktok.style.display='none';gamesEl.style.display='grid'}}
+function renderTikTok(){tiktok.innerHTML='';algorithm(games).forEach(g=>{const d=document.createElement('div');d.innerHTML=`${g.video?`<video src='${g.video}' autoplay loop muted playsinline></video>`:`<img src='${g.image}'>`}<h2>${g.title}</h2><p>${g.description}</p><p class='link' onclick="openProfile('${g.author}')">👤 ${g.author}</p><button onclick="likeGame(${g.id},this.parentElement)">❤️ Curtir</button><a href='${g.link}' target='_blank'>▶ Jogar Demo</a>`;tiktok.appendChild(d)})}
+
+function saveAll(){localStorage.setItem('users',JSON.stringify(users));localStorage.setItem('profiles',JSON.stringify(profiles));localStorage.setItem('games',JSON.stringify(games));localStorage.setItem('follows',JSON.stringify(follows))}
+function render(){gamesEl.innerHTML='';algorithm(games).forEach(g=>{const d=document.createElement('div');d.className='card';d.innerHTML=`${g.featured?'<span class=badge>🏆 Destaque</span>':''}${g.video?`<video src='${g.video}' controls></video>`:`<img src='${g.image}'>`}<h3>${g.title}</h3><p>${g.description}</p><p>Autor: <span class='link' onclick="openProfile('${g.author}')">${g.author}</span></p><a href='${g.link}' target='_blank'>Jogar</a><div>❤️ ${g.likes} <button onclick='likeGame(${g.id})'>Curtir</button></div><input placeholder='Comentar' onkeydown="if(event.key==='Enter')addComment(${g.id},this.value)">${g.comments.map(c=>`<div class='comment'>${c}</div>`).join('')}`;gamesEl.appendChild(d)})}
+const gamesEl=document.getElementById('games');const tiktok=document.getElementById('tiktok');render();
+</script>
+</body>
+</html>
